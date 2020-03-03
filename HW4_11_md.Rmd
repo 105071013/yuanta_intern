@@ -1,0 +1,246 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+library(ISLR)
+library(ROCR)
+library(e1071)
+library(MASS)
+library(class)
+library(pROC)
+attach(Auto)
+#create mpg01
+mpg01 <- ifelse(mpg > median(mpg), 1, 0)
+Auto <- data.frame(Auto, mpg01)
+```
+
+**11.**
+
+**b**
+```{r, echo=FALSE}
+#b
+cor(Auto[, -9])
+summary(Auto)
+```
+
+```{r, echo=FALSE, fig.height = 5, fig.width = 10, fig.align = "center"}
+#scatter plot
+par(mfrow = c(2, 4))
+plot(mpg01, Auto$mpg, ylim = c(5, 50))
+plot(mpg01, Auto$cylinders, ylim = c(1, 10))
+plot(mpg01, Auto$displacement, ylim = c(50, 500))
+plot(mpg01, Auto$horsepower, ylim = c(40, 250))
+plot(mpg01, Auto$weight, ylim = c(1500, 5500))
+plot(mpg01, Auto$acceleration, ylim = c(5, 25))
+plot(mpg01, Auto$year, ylim = c(65, 85))
+plot(mpg01, Auto$origin, ylim = c(0, 4))
+```
+
+```{r, echo=FALSE, fig.height = 5, fig.width = 10, fig.align = "center"}
+#box plot
+par(mfrow = c(2, 4))
+boxplot(Auto$mpg ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'mpg')
+boxplot(Auto$cylinders ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'cylinders')
+boxplot(Auto$displacement ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'displacement')
+boxplot(Auto$horsepower ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'horsepower')
+boxplot(Auto$weight ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'weight')
+boxplot(Auto$acceleration ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'acceleration')
+boxplot(Auto$year ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'year')
+boxplot(Auto$origin ~ mpg01,
+        xlab = 'mpg01',
+        ylab = 'origin')
+```
+
+**c**
+```{r, echo=FALSE}
+#c
+set.seed(1)
+#randomly split the data to 70% and 30%
+idx <- sample(1:dim(Auto)[1], round(dim(Auto)[1]*0.7), replace = F)
+Auto_train <- Auto[idx, ]
+Auto_test <- Auto[-idx, ]
+mpg01_test <- mpg01[-idx]
+```
+
+**d**
+```{r, echo=FALSE}
+#d
+#i pick cylindersAdisplacementAhorsepowerAweight to be the covariates.
+print('LDA')
+fit_lda <- lda(mpg01 ~ cylinders + displacement + horsepower + weight, data = Auto_train)
+pred_lda <- predict(fit_lda, Auto_test)
+print('confusion matrix')
+table(pred_lda$class, mpg01_test)
+#test error
+cat('test error:', 1 - mean(pred_lda$class == mpg01_test))
+```
+
+**e**
+```{r, echo=FALSE}
+#e
+print('QDA')
+fit_qda <- qda(mpg01 ~ cylinders + displacement + horsepower + weight, data = Auto_train)
+pred_qda <- predict(fit_qda, Auto_test)
+print('confusion matrix')
+table(pred_qda$class, mpg01_test)
+#test error
+cat('test error:', 1 - mean(pred_qda$class == mpg01_test))
+```
+
+**f**
+```{r, echo=FALSE}
+#f
+print('logistic regression')
+fit_logi <- glm(mpg01 ~ cylinders + displacement + horsepower + weight, data = Auto_train, family = binomial)
+logi_pred <- predict(fit_logi, Auto_test, type = "response")
+pred_logit <- ifelse(logi_pred > 0.5, 1, 0)
+print('confusion matrix')
+table(pred_logit, mpg01_test)
+#test error
+cat('test error:', 1 - mean(pred_logit == mpg01_test))
+```
+
+**g**
+```{r, echo=FALSE}
+print('KNN with K = 1')
+#split data
+train_X <- Auto_train[, c(2,3,4,5)]
+test_X <- Auto_test[, c(2,3,4,5)]
+train_Y <- mpg01[idx]
+#set seed
+set.seed(1)
+# predict when k=1
+pred_knn_1 <- knn(train_X, test_X, train_Y, k=1)
+print('confusion matrix')
+table(pred_knn_1, mpg01_test)
+# test error
+cat('test error:', 1 - mean(pred_knn_1 == mpg01_test))
+#AUC 
+cat('AUC:', auc(as.numeric(mpg01_test), as.numeric(pred_knn_1)))
+```
+
+```{r, echo=FALSE}
+print('KNN with K = 10')
+#set seed
+set.seed(1)
+# predict when k=1
+pred_knn_10 <- knn(train_X, test_X, train_Y, k=10)
+print('confusion matrix')
+table(pred_knn_10, mpg01_test)
+# test error
+cat('test error:', 1 - mean(pred_knn_10 == mpg01_test))
+#AUC 
+cat('AUC', auc(as.numeric(mpg01_test), as.numeric(pred_knn_10)))
+```
+
+```{r, echo=FALSE}
+print('KNN with K = 100')
+#set seed
+set.seed(1)
+# predict when k=1
+pred_knn_100 <- knn(train_X, test_X, train_Y, k=100)
+print('confusion matrix')
+table(pred_knn_100, mpg01_test)
+# test error
+cat('test error:', 1 - mean(pred_knn_100 == mpg01_test))
+#AUC 
+cat('AUC:', auc(as.numeric(mpg01_test), as.numeric(pred_knn_100)))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
