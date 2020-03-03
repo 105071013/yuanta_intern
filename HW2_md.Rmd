@@ -1,0 +1,211 @@
+---
+title: "<center>Statistical Learning HW2<center>"
+author: "<p align='right'>105071013 ³¯«aºû>"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**8.**
+
+**(a)**
+```{r, echo=FALSE}
+Auto <- read.csv("./Auto.csv", header = TRUE, na.strings = '?')
+Auto = na.omit(Auto)
+fit1 <- lm(mpg~horsepower, data = Auto)
+summary(fit1)
+```
+
+**i.**  Yes, there is a relationship between the predictor and the response. We can find it through **the null hypothesis of all regression coefficients equal to zero**. Because the p-value of F-statistic is close to zero, we can **reject the null hypothesis**. That is, there is a significant relationship between horsepower and mpg. 
+
+**ii.** First, the **R-squared** is equal to 0.6059 which indicates that about 60.59% of variation in mpg can be explained by horsepower.Second, the RSE equals to 4.906, and the mean of response(mpg) is 23.44592.Now we can calculate the **percentage error** which equals to 4.906/23.44592(=20.923%).
+
+**iii.**Since **the coefficient of horsepower is negative**(-0.157845), the relationship between the predictor and the response is negative.
+
+**iv.** 
+```{r, echo=FALSE}
+predict(fit1, newdata = data.frame(horsepower=c(98)), interval = 'confidence')
+```
+
+The predicted mpg associated with a horsepower of 98 is 24.46708.
+
+And the associated 95% confidence interval is [23.97308, 24.96108].
+
+```{r, echo=FALSE}
+predict(fit1, newdata = data.frame(horsepower=c(98)), interval = 'prediction')
+```
+
+The associated 95% prediction interval is [14.8094, 34.12476].
+
+**(b)**
+```{r, echo=FALSE, fig.height = 4, fig.width = 6, fig.align = "center"}
+plot(Auto$horsepower, Auto$mpg,
+     pch = 1,
+     cex = 1,
+     xlab = 'horsepower',
+     ylab = 'mpg',
+     main = 'least squares regression line')
+abline(fit1, col = 4, lwd = 2)
+```
+
+Above shows the least squares regression line with the data points.
+
+**(c)**
+```{r, echo=FALSE, fig.height = 7, fig.width = 10, fig.align = "center"}
+par(mfrow=c(2,2))
+plot(fit1)
+```
+
+**(i.)**  The upper left plot has a parabola, that is, there is a non-linear relationship between predictor variables and an outcome variable. This tells us **the non-linear relationship was not explained by the model** and was left out in residuals.
+
+**(ii.)** The upper right plot indicates that **residuals are somewhat NOT normally distributed** because most of the residuals are lined well on the straight dashed line, however, some of the left and right side residuals are not.
+
+**(iii.)**The lower left plot indicates **the residuals are NOT spread equally along the ranges of predictors**,that is, the assumption of equal variance(homoscedasticity) may be wrong.
+
+**(iv.)** In the lower right plot, we don't even see the Cook's distance lines. This indicates **there is no influential cases**, that is, even though our data have extreme values, they are not influential to determine a regression line.
+
+**9.**
+
+**(a)**
+```{r, echo=FALSE, fig.align = "center"}
+pairs(Auto)
+```
+
+Above is the scatterplot matrix which includes all of the variables in the data set.
+
+**(b)**
+```{r, echo=FALSE}
+cor(subset(Auto, select=-name))
+```
+
+Above shows the correlation between the variables which exclude 'name'.
+
+**(c)**
+```{r, echo=FALSE}
+fit2 <- lm(mpg~.-name, data=Auto)
+summary(fit2)
+```
+
+**(i.)**  Yes, **there is a relationship between the predictors and the response.** Since the p-value of F-statistic is close to zero, we can reject the null hypothesis(whether all the regression coefficients are zero).
+
+**(ii.)** Checking the p-value of t-statistic of each predictors, **I found that 'displacement', 'weight', 'year' and 'origin' have a statistically significant relationship to the response.** However, 'cylinders', 'horsepower' and 'acceleration' do not because their associated p-value of t-statistic is NOT close to zero so we can not reject the null hypothesis.
+
+**(iii.)**The regression coefficient for year is 0.750773. **It suggests that mpg will increase by 0.750773 for every one year.** In other words, the cars will become more fuel saving every one year by 0.750773.
+
+**(d)**
+```{r, echo=FALSE, fig.height = 7, fig.width = 10, fig.align = "center"}
+par(mfrow=c(2,2))
+plot(fit2)
+```
+
+**(i.)**  Based on the residuals plots, there is a non-linear relationship between predictor variables and an outcome variable. This tells us **the non-linear relationship was not explained by the model** and was left out in residuals.**Inaddition, it suggests that points 323,327and 326 are unusually large outliers.** 
+
+**(ii.)** Based on the QQ-plots, **residuals are somewhat NOT normally distributed** because most of the residuals are lined well on the straight dashed line, however, some of the right side residuals are not.
+
+**(iii.)**Based on the scale-location plots, **the residuals appear randomly spread.**That is, the assumption of equal variance is proved.
+
+**(iv.)** Based on the leverage plot, **the point 14 appears to be a unusually high leverage observation. However, it is not influential in linear regression analysis since it located inside of the Cook's distance.**
+
+**(e)**
+```{r, echo=FALSE}
+fit3 <- lm(mpg~horsepower*acceleration + horsepower*weight, data=Auto)
+summary(fit3)
+```
+
+I found that horsepower is negatively correlated with acceleration but positively correlated with weight so I choose these three features to check the interaction effects. From the p-values, We can see that **the interaction between horsepower and weight is statistically significant, while the interaction between horsepower and acceleration is not.**
+
+**(f)**
+```{r, echo=FALSE}
+fit4 <- lm(mpg~horsepower + log(acceleration) + sqrt(horsepower) + I(weight^2), data=Auto)
+summary(fit4)
+```
+
+From the p-values, we can see that **log(acceleration)¡Bsqrt(horsepower)and weight^2 are all statistically significant.**
+
+```{r, echo=FALSE, fig.height = 7, fig.width = 10, fig.align = "center"}
+par(mfrow=c(2,2))
+plot(fit4)
+```
+
+Let's focus on the upper left plot, based on the residual plots, **the residuals are more equally spread around a horizontal line without distinct patterns than previous one. This tells us the model can capture the non-linear relationship more precisely since we add some transformations of the variables.**
+
+**(10.)**
+
+**(a)**
+```{r, echo=FALSE}
+library(ISLR)
+summary(Carseats)
+```
+
+Above shows the sumary of the dataset. We can see that **'ShelveLoc', 'Urban' and 'US' are categorical variables.**
+
+```{r, echo=FALSE}
+fit5 <- lm(Sales~Price+Urban+US, data=Carseats)
+summary(fit5)
+```
+
+Above is the summary of a multiple regression model to predict Sales using Price, Urban and US. 
+
+From the p-values of t-statistic, we can observe that **Price and US have a statistically significant relationship to Sales(response) but Urban dose not.**
+
+**(b)**
+
+**Price**: Since the p-value of t-statistic is close to zero, or we say <0.05, which is under the significance level of 5% so we can reject the null hypothesis. In addition, The coefficient suggests a negative relationship between Price and Sales, that is, **when the price increases, the sales will decrease.**
+
+**Urban**: Based on the p-value of t-statistic, **there isn't a relationship between the location of the store and the number of sales.**
+
+**US**: Since the p-value of t-statistic is close to zero or we say <0.05, which is under the significance level of 5% so we can reject the null hypothesis. In addition, The coefficient suggests a positive relationship between US and Sales, that is, **if the store is in the US(Yes), the sales will increase about 1200.57 units.**
+
+**(c)**
+
+$\hat{Sales}$ = $13.04347$$-$$0.05446$$*$$Price$$-$$0.02192$$*$$I(Urban)$$+$$1.20057$$*$$I(US)$ 
+
+where $I(Urban)$ = 1 if Urban = Yes¡F$I(Urban)$ = 0 if Urban = No
+
+where $I(US)$ = 1 if US = Yes¡F$I(US)$ = 0 if US = No
+
+**(d)**
+
+**The predictors 'Price' and 'US' can reject the null hypothesis** since their p-value of t-statistic is close to zero, or we say <0.05, which is under the significance level of 5%.
+
+**(e)**
+```{r, echo=FALSE}
+fit6 <- lm(Sales~Price+US, data=Carseats)
+summary(fit6)
+```
+
+The smaller model fitted only by the predictors for which there is evidence of association with the outcome suggests the two covariates have a statistically significant relationship to the response. However, the R-squared is as low as the previous model and the adjusted R-squared only increase a little bit.
+
+**(f)**
+
+The models in (a) and (e) both fit the data similarly since they have the same low R-squared score which is 23.93% and the model in (e) just has a slightly lower RSE. 
+
+In conclusion, they don't fit the data well.
+
+**(g)**
+```{r, echo=FALSE}
+confint(fit6)
+```
+
+Above shows the 95% confidence intervals for the coefficients.
+
+We can see that all of the three confidence intervals do NOT contain zero. This tells us that we should reject the null hypothesis under a 5% significance level.
+
+**(h)**
+```{r, echo=FALSE, fig.height = 7, fig.width = 10, fig.align = "center"}
+plot(predict(fit6), rstudent(fit6))
+```
+
+Above shows **the studentized residuals are bounded by -3 to 3.** It indicates **there is no evidence of outlier observations** in the model from (e).
+
+**(h)**
+```{r, echo=FALSE, fig.height = 7, fig.width = 10, fig.align = "center"}
+par(mfrow=c(2,2))
+plot(fit6)
+```
+
+Let's focus on the lower right plot. When we check the high leverage observations, we determine it by checking **if the leverage greatly exceeds (p+1)/n, which equals to (2+1)/400 = 0.0075.** That is, **the observations' leverage which exceeds 0.0075 will be considered to be high leverage.**
+
