@@ -1,0 +1,180 @@
+---
+title: "<center>Statistical Learning HW2<center>"
+author: "<p align='right'>105071013 ?™³?? ç¶­</p>>"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+# create dataset
+set.seed(36)
+n <- 100; sigma <- 5; beta0 <- c(2, -2, 0.5, 1, -3)
+# create the design matrix with equal-correlation 0.5
+# below is the covariance matrix
+cormat <- diag(1, nrow=5, ncol=5)
+cormat[cormat == 0] <- 0.5
+cholmat <- chol(cormat) # 5*5
+# 5*n?€? normal(0,1)?Š½?‡ºä¾†ç?„æ•¸ (500*5)
+# %*% -> ?Ÿ©?™£?›¸ä¹?
+x <- matrix(rnorm(5*n, 0, 1), ncol=5)%*%cholmat
+err <- rnorm(n, 0, sigma)
+y <- x%*%beta0 +err
+
+#ä»¥ä?Šæ˜¯??Ÿæ?data?–¹å¼?(ä¸ç”¨showçµ¦åŠ©???)
+```
+
+**2a**
+```{r, echo=FALSE}
+# 2a
+# OLS -> ??‰beta0ï¼Œå¹«x?Ÿ©?™£?? ä?Šä?€è¡?1
+x1 <- cbind(matrix(1,100,1), x)
+#x -> æ¨™æ?–å??
+z <- scale(x)
+#y -> æ¸›mean
+y_ <- y - mean(y)
+
+
+unscaled_beta <- solve(t(x1)%*%x1)%*%t(x1)%*%y
+scaled_beta <- solve(t(z)%*%z, t(z)%*%y_)
+cat("unscaled betaï¼?", unscaled_beta)
+cat("scaled betaï¼?", scaled_beta)
+
+```
+?? ç‚ºlinear regression model??‰å«?ˆªè·é??(Beta_0)ï¼Œå? æ­¤**é¦–å?ˆæ?‘å?‡X?Ÿ©?™£??„ç¬¬ä¸€è¡Œå? ä??100???1è¡Œä?‹å?ƒç? ç‚º1??„çŸ©?™£**?€?
+
+??ä?†æ?‘é?‹ç”¨??é¢è­‰æ?Žå‡º??„OLS?–¹æ³•ä¼°**è¨ˆå‡ºunscaled_betaï¼Œä?€?…±???6???(beta_0 ~ beta_5)**?€?
+
+?Ž¥??—æ?‘å?‡Xæ¨™æ?–å?–ã€yå¹³æ?›meanï¼Œä»¥ä¼°è?ˆå‡ºscaled beta?€?
+
+?¯ä»¥ç?‹åˆ°**scaled beta?…±???5???(beta_1 ~ beta_5)**ï¼Œå? ç‚º?€é?ŽXæ¨™æ?–å?–ã€yå¹³æ?›meanï¼Œæ?‘å€‘å?‡beta_0(?ˆªè·é??)??’é™¤?€?
+
+```{r, echo=FALSE}
+find_unscaled_beta <- (scaled_beta / apply(x, 2, sd))
+unscaled_beta_0 <- mean(y - (x%*%find_unscaled_beta))
+cat("?€é?Žå?‡scaled beta?™¤ä»¥sdxï¼ŒæŽ¨??žunscaled betaï¼?", find_unscaled_beta)
+cat("?‰¾?‡ºunscaled beta_0ï¼?", unscaled_beta_0)
+```
+?€é?Žä?Šè¿°?Ž¨å°Žç?„å…¬å¼ï??**??‘å?‡scaled beta?™¤ä»¥X??„æ?™æ?–å·®ï¼Œå?—åˆ°unscaled beta(1~5)**?€?
+
+?€?**unscaled beta0??‡é€é?Žå€’æŽ¨æ³?**ï¼Œå?–y??‡y_hat(X*unscaled beta(1~5))ä¹‹å·®??„å¹³??‡å?—å‡º?€? 
+
+**2b**
+```{r, echo=FALSE, fig.align = "center"}
+lambda <- c(2^-10, 2^-9, 2^-8, 2^-7, 2^-6, 2^-5, 2^-4, 2^-3, 2^-2, 2^-1, 1, 2, 2^2, 2^3, 2^4, 2^5)
+log_lambda <- log(lambda)
+beta_vec <- matrix(1:5, 5, 1)
+for(i in 1:length(lambda)){
+  Beta <- matrix(solve(t(z)%*%z + 2*n*lambda[i]*diag(1, 5, 5))%*%t(z)%*%y_, 5, 1)
+  beta_vec <- cbind(beta_vec, Beta)
+}
+beta_vec <- beta_vec[, -1]
+# plot the solution path
+plot(log_lambda, beta_vec[1 ,], type = 'l', col = 1, ylim = c(-5,5), 
+     xlab = "Log Lambda", ylab = "Beta_hat", main = "Solution Path")
+lines(log_lambda, beta_vec[2, ], lty = 1, col = 2)
+lines(log_lambda, beta_vec[3, ], lty = 1, col = 3)
+lines(log_lambda, beta_vec[4, ], lty = 1, col = 4)
+lines(log_lambda, beta_vec[5, ], lty = 1, col = 5)
+abline(h = 0, lty = 2)
+legend("topright", legend = c("beta1", "beta2", "beta3", "beta4", "beta5"),
+       lty = c(1, 1, 1, 1, 1), col = c(1, 2, 3, 4, 5), cex = 1)
+```
+
+ä¸Šå?–ç‚º??‹ç”¨é¡Œç›®ä¸Šç?„PRSSï¼Œä¸¦??‹ç”¨??é¢è­‰æ?Žå‡ºä¾†ç?„å…¬å¼æ‰¾?‡ºRidge beta hat?€?
+
+ä¸¦ç•«?‡ºRidge beta hat??„solution pathï¼Œå…¶ä¸­xè»¸æ?‘æ?Šlambda??–logï¼Œå?Ÿå? æ˜¯?‚ºäº†è?“é?žèƒ½å¤ åœ¨??–ä?Šæ›´??‡å‹»??†å?ƒï?Œä?æ?ƒä½¿è¼ƒå?ã€æŽ¥è¿‘æ–¼0??„lambdaå°æ?‰ç?„é?žéƒ½?? åœ¨ä¸€èµ·ã€?
+
+?¦å¤–å¯ä»¥å?žé€™å¼µ??–ç™¼?¾ï¼Œlambda??ˆå¤§ï¼Œä¼°è¨ˆå‡ºä¾†ç?„Ridge beta hat??ˆå?ï?Œæ?€å¾Œç?šè‡³è¶¨è?‘æ–¼0?€?
+
+?€™ä?Ÿå?•ç¾äº†Ridge regression?‡²ç½°é?…ç?„æ?ˆæ?œã€?
+
+
+```{r, echo=FALSE}
+# report scaled_beta when lambda = 2 in the original scale
+unscaled_beta_lambda2 <- beta_vec[, 12] / apply(x, 2, sd)
+unscaled_beta0_lambda2 <- mean(y - (x%*%unscaled_beta_lambda2))
+cat("å°‡Ridge beta hat?Ž¨??žunscaled betaï¼?", unscaled_beta_lambda2)
+cat("??‹ç”¨???2a?›¸??Œç?„æ–¹æ³•åŽ»?Ž¨??žunscaled beta0ï¼?", unscaled_beta0_lambda2)
+```
+
+??Œæ¨£??„ï?Œå?ˆå?‡scaled_beta?™¤ä»¥X??„æ?™æ?–å·®ä¾¿å¯ä»¥å?—åˆ°unscaled beta(1~5)?€?
+
+?€Œå?Œå?é?‹ç”¨y??‡y_hat(X*unscaled beta(1~5))ä¹‹å·®??„å¹³??‡æŽ¨å¾—beta0?€?
+
+**2c**
+```{r, echo=FALSE, fig.align = "center"}
+library(glmnet)
+RIDGE <- glmnet(z, y_, family = "gaussian", alpha = 0, lambda = lambda) 
+
+plot(log_lambda, RIDGE$beta[1, 16:1], type = 'l', col = 1, ylim = c(-5,5), 
+     xlab = "Lambda", ylab = "Beta_hat", main = "Solution Path from the package glmnet")
+lines(log_lambda, RIDGE$beta[2, 16:1], lty = 1, col = 2)
+lines(log_lambda, RIDGE$beta[3, 16:1], lty = 1, col = 3)
+lines(log_lambda, RIDGE$beta[4, 16:1], lty = 1, col = 4)
+lines(log_lambda, RIDGE$beta[5, 16:1], lty = 1, col = 5)
+abline(h = 0, lty = 2)
+legend("topright", legend = c("beta1", "beta2", "beta3", "beta4", "beta5"),
+       lty = c(1, 1, 1, 1, 1), col = c(1, 2, 3, 4, 5), cex = 0.8)
+```
+
+ä¸Šå?–è??2b??„å?–æ?”è?ƒå?Œç™¼?¾ï¼Œå?—ä»¶è§??‡ºä¾†ç?„betaï¼Œéš¨??—lambda??„ä?Šå?‡ï?Œè?ƒæ…¢è·‘åˆ°0?€?
+
+å°æ–¼?€™å…©ç¨®æ–¹å¼æ?€?”¢??Ÿç?„å·®?•°ï¼Œä»¥ä¸‹æ?‘æ‰¾?‡º2é»žå¯?ƒ½?€§ã€?
+
+(1) glmnetè£¡å?šç¾©??„PRSS??‡ä?œæ¥­å®šç¾©??„PRSS??‰è?—ä?›è¨±ä¸å?Œã€‚glmnetå®šç¾©??„PRSS??å?Šéƒ¨??†ç?„SSE?˜¯?™¤ä»¥nï¼Œè€Œä?œæ¥­å®šç¾©??„å?‡æ˜¯?™¤ä»?2n?€‚é€™å?‡å?Žè‡´?…©?€…åœ¨?‡²ç½°é?…ä?Šç?„å·®?•°ï¼Œglmnetç­‰å?Œæ–¼?˜¯?”¨?›¸è¼ƒæ–¼ä½œæ¥­ä¸Šè?ƒå?ç?„lambda(å¥—ä»¶?˜¯n?€ç?„lambdaï¼›ä?œæ¥­??‡æ˜¯2n?€ç?„lambda)?€‚å? æ­¤ä¹Ÿé€ æ?é€™æ¨£??„ç?æ?œï?Œå?—ä»¶??„betaè·‘åˆ°0??„é€Ÿåº¦è¼ƒæ…¢?€?
+
+(2) glmnet?”¨ä¾†æ‰¾?‡ºbeta??„æ–¹å¼è?‡æ?‘å€‘ä?å?Œï?Œå?ƒç”¨??„æ˜¯ä¸€ç¨®å«??šcyclical coordinate descent??„æ–¹æ³•ã€‚æ­¤?–¹æ³•é€é?Žå›ºå®šå…¶ä»–å?ƒæ•¸ä¸‹ç?“ç”±??ä?€??ƒæ•¸??„é?é©ï¼ŒåŽ»??€ä½³å?–ç›®æ¨™å‡½?•¸ï¼Œä¸¦??è?‡æ­¤??•ä?œç›´?ˆ°?”¶??‚ï?Œä?†è§£?‡º??€ä½³è§£?€?
+
+**2d**
+```{r, echo=FALSE}
+# split the training set to train and cv set
+idx <- sample(1:100, 70, replace = F)
+train_z <- z[idx, ]
+train_y <- y_[idx]
+cv_z <- z[-idx, ]
+cv_y <- y_[-idx]
+# finding which lambda gives the lowest RSS in cv set
+# fit the parameter using training set
+beta_vec2 <- matrix(1:5, 5, 1)
+for(i in 1:length(lambda)){
+  Beta <- matrix(solve(t(train_z)%*%train_z + 2*70*lambda[i]*diag(1, 5, 5))%*%t(train_z)%*%train_y, 5, 1)
+  beta_vec2 <- cbind(beta_vec2, Beta)
+}
+beta_vec2 <- beta_vec2[, -1]
+# use CV set to find which lambda gives the lowest sum of square error
+# first calculate all SSE
+SSE <- c()
+for(i in 1:length(lambda)){
+  SSE <- append(SSE, sum((cv_y - cv_z %*% beta_vec2[, i])^2))
+}
+# pick the lowest one
+idx <- which.min(SSE)
+best_lambda <- lambda[idx]
+cat("??‘é¸?‡ºä¾†ç?„æ?€ä½³lambdaï¼?", best_lambda)
+```
+
+??‘æ˜¯? ¹??šä»¥ä¸‹ç?„æ­¥é©ŸåŽ»?‰¾?‡º??€ä½³lambda???
+
+(1) é¦–å?ˆéš¨æ©Ÿç?„å?‡å?Ÿå?‹data??†æ??7:3ï¼?7??ç•¶ä½œè?“ç·´??†ï??3??ç•¶ä½œCV?€?
+
+(2) ??ä?†æ?‘ç”¨16ç¨®ä?å?Œç?„lambdaï¼Œé?‹ç”¨??ˆå?è?‰æ?Žç?„æ–¹æ³•ï?Œä?æ?šè?“ç·´??†åŽ»??é©?‡º16ç¨®ä?å?Œç?„beta?€?
+
+(3) ?Ž¥??—æ?‘å??16ç¨®betaå¸¶å?žCV??†ç?„Xï¼Œä¸¦æ±‚å‡º16ç¨®y hat?€?
+
+(4) ??ä?†æ?‘å?‡æ?‚å‡º???16ç¨®y hat??†åˆ¥?Ž»è¨ˆç?—ä?–å€‘ç?„SSE(CV??„yæ¸›æ?‰y hatï¼Œå?æ?‚å¹³?–¹???)?€?
+
+(5) å¾?16?€‹SSE?‰¾?‡º??€å°ç?„ï?Œå…¶??€å°æ?‰åˆ°??„lambdaå°±æ˜¯?¸??–å‡ºä¾†æ?€ä½³ç?„lambda?€?
+
+?€é?Žæ­¤?–¹æ³•æ?‚å‡º??„æ?€ä½³lambdaä¸ä?€å®šæ˜¯æ­?ç¢ºç?„ï?Œå? ç‚ºæ¨??œ¬?•¸(n = 100)å¤ªå?‘ç?„é?œä?‚ï?Œå?Žè‡´æ¯æ¬¡æ±‚å‡º??„ç?æ?œå¯?ƒ½ä¸å?Œã€?
+
+?„¶?€Œåªè¦æ¨£?œ¬?•¸å¤ å?šï?Œæ­¤?–¹æ³•æ˜¯?¯è¡Œç?„ã€?
+
+
+
+
+
+
