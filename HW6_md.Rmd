@@ -1,0 +1,433 @@
+---
+title: "<center>Statistical Learning HW5<center>"
+author: "<p align='right'>105071013 </p>>"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**4.**
+
+**(a)**
+
+**(b)**
+
+**8.**
+
+**(a)**
+```{r, echo=FALSE}
+library(ISLR)
+attach(Carseats)
+#a
+#split the data
+set.seed(3)
+idx <-sample(1:nrow(Carseats), 300)
+train <- Carseats[idx, ]
+test <- Carseats[-idx, ]
+```
+首先，我先將資料依據set.seed(3)切成train、test set，分別為300筆以及100筆樣本。
+
+**(b)**
+```{r, echo=FALSE}
+#b
+library(tree)
+tree1 <- tree(Sales~.,data = train)
+#result
+summary(tree1)
+```
+
+```{r, echo=FALSE, fig.height = 10, fig.width = 10, fig.align = "center"}
+#plot the tree
+plot(tree1)
+text(tree1, pretty = 0)
+```
+接著我在未調整任何參數下，fit出這個regression tree。
+
+可以透過上述summary、樹狀圖發現:
+
+(1)最後總共產生15個terminal nodes。
+
+(2)在建樹的過程中，有運用到的參數有"ShelveLoc", "Price", "Income", "Age", "Advertising", "CompPrice", "Education"。 
+
+(3)Residual mean deviance為2.53。
+
+```{r, echo=FALSE}
+#predict
+pred1 <- predict(tree1, newdata = test)
+#test MSE
+cat('test MSE:', mean((pred1 - test$Sales)^2)) # 4.958352
+```
+可以發現，這個模型的test MSE為4.958352。
+
+**(c)**
+
+```{r, echo=FALSE}
+#c
+#cv to determine the complexity
+set.seed(3)
+cv_tree1 <- cv.tree(tree1, K=5)  # K-folds CV
+cv_tree1
+min(cv_tree1$dev)
+```
+可以看出，最佳的tree complexity為size = 14，也就是CV算出有著最小dev的值。
+
+```{r, echo=FALSE, fig.height = 5, fig.width = 10, fig.align = "center"}
+plot(cv_tree1$size ,cv_tree1$dev ,type="b")
+#dev -> sum of square error for diff models
+#choose best size = 14
+```
+同樣的，上圖也映證了這個結果，因此我挑選best size = 14。
+
+```{r, echo=FALSE}
+#prune the tree
+prune_tree1 <- prune.tree(tree1,best = 14)
+#predict
+pred2 <- predict(prune_tree1, newdata = test)
+#test MSE
+cat('test MSE:', mean((pred2 - test$Sales)^2)) # 4.787243
+```
+可以看到，選取size = 14，經過修樹後，test MSE由4.958352下降到4.787243。
+
+**(d)**
+```{r, echo=FALSE}
+#d
+#bagging
+library(randomForest)
+set.seed(3)
+#mtry = 10 -> randomforest to bagging
+bagging <- randomForest(Sales~., data = train, mtry = ncol(train) - 1)
+#predict
+pred3 <- predict(bagging, newdata = test)
+cat('test MSE:', mean((pred3 - test$Sales)^2)) # 2.207301
+```
+接下來我運用bagging去配適。
+
+可以發現test MSE為2.207301，相較於前面的regression tree低。
+
+```{r, echo=FALSE, fig.height = 10, fig.width = 5, fig.align = "center"}
+#variable importance
+importance(bagging)
+varImpPlot(bagging, main="variable importance plot")
+```
+接著可以從上面看出前10大的重要變數，分別是:ShelveLoc, Price, CompPrice, Age, Advertising, Income, Population, Education, Urban, US。
+
+**(e)**
+```{r, echo=FALSE}
+#e
+#random forest
+set.seed(3)
+rf <- randomForest(Sales~., data = train)
+#predict
+pred4 <- predict(rf, newdata = test)
+#test MSE
+cat('test MSE:', mean((pred4 - test$Sales)^2)) # 2.36977
+```
+接下來，我運用randomforest去配適。
+
+可以發現test MSE為2.36977
+
+```{r, echo=FALSE, fig.height = 10, fig.width = 5, fig.align = "center"}
+#variable importance
+importance(rf)
+varImpPlot(rf, main="variable importance plot")
+```
+接著可以從上面看出前10大的重要變數，分別是:ShelveLoc, Price, Age, Advertising, CompPrice, Income, Population, Education, Us, Urban。
+
+```{r, echo=FALSE}
+#the effect of m(number of covariates randomly selected)
+#m = 3
+set.seed(3)
+rf_1 <- randomForest(Sales ~ ., data = train, mtry = 3)
+pred5 <- predict(rf_1, newdata = test)
+cat('test MSE when we randomly select 3 covariates:', mean((pred5 - test$Sales)^2))
+#m = 6
+set.seed(3)
+rf_2 <- randomForest(Sales ~ ., data = train, mtry = 6)
+pred6 <- predict(rf_2, newdata = test)
+cat('test MSE when we randomly select 6 covariates:', mean((pred6 - test$Sales)^2))
+#m = 9
+set.seed(3)
+rf_3 <- randomForest(Sales ~ ., data = train, mtry = 9)
+pred7 <- predict(rf_3, newdata = test)
+cat('test MSE when we randomly select 9 covariates:', mean((pred7 - test$Sales)^2))
+```
+上述我運用三種情形去比較m(每個分切點去隨機選取的變數個數)對模型的影響。
+
+首先當m=3時，可以發現test MSe是2.36977，
+
+當m=6時，test MSE是2.222109，
+
+當m=9時，test MSE是2.242288。
+
+可以得知，這裡m=6為最好的模型，成功獲得了最低的test MSE。
+
+而m=3有點under-fitting，m=9則是有點over-fitting。
+
+由此可見，m的選取會有trade-off，因此我們可以運用CV去挑選出最好的m。
+
+**9.**
+
+**(a)**
+```{r, echo=FALSE}
+#9
+#a
+#split the data
+library(ISLR)
+attach(OJ)
+set.seed(3)
+idx <-sample(1:nrow(OJ), 800)
+train <- OJ[idx, ]
+test <- OJ[-idx, ]
+```
+首先，我根據set.seed(3)將資料分成train、test set，分別為800、270筆資料。
+
+**(b)**
+```{r, echo=FALSE}
+#b
+library(tree)
+tree1 <- tree(Purchase~.,data = train)
+#result
+summary(tree1)
+#train error rate = 0.1812
+#9 terminal nodes
+```
+接著我運用regression tree來配適。
+
+可以發現:
+
+(1)用來建樹有用到的變數分別為:LoyalCH, PriceDiff, PriceMM, SalePriceMM。
+
+(2)terminal nodes:9
+
+(3)training error rate:0.1812
+
+**(c)**
+```{r, echo=FALSE}
+tree1
+```
+這邊我挑選的terminal node是編號13的node，最後的 * 表示這個是一個terminal node。
+
+(1)首先，這個node上用來分切的變數為PriceDiff，而分切的值為0.265。
+
+(2)根據上表，有74個資料點落在這個region。
+
+(3)所有在這個region裡的資料點的deviance為25.11。
+
+(4)這個terminal node表示，預測出的結果為Purchase = CH。
+
+(5)這個region裡的資料點有95.946%的Purchase = CH，只有0.04054%的Purchase = MM。
+
+**(d)**
+```{r, echo=FALSE, fig.height = 10, fig.width = 10, fig.align = "center"}
+#d
+#plot the tree
+plot(tree1)
+text(tree1, pretty = 0)
+```
+(1)在建樹的過程中，有運用到的參數有LoyalCH、PriceDiff、PriceMM、SalePriceMM。
+
+(2)共分成9個terminal nodes。
+
+(3)可以發現LoyalCH應該會是一個滿重要的變數，LoyalCH < 0.0356415時，預測為MM；而LoyalCH > 0.764572時，預測為CH。介於兩者之間的值則透過其餘變數去做分類。
+
+**(e)**
+```{r, echo=FALSE}
+#e
+#classification -> type = 'class'
+pred1 <- predict(tree1, newdata = test, type = 'class')
+#confusion matrix
+table(test$Purchase, pred1)
+cat('test error rate:', 1 - mean(test$Purchase == pred1))
+```
+首先可以從confusion matrix看到，預測為CH時的test error rate為0.1731844，預測為MM時的test error rate為0.1648352。
+
+這兩個數字其實是相差不遠的，此外這個模型的總test error rate為0.1703704。
+
+**(f)**
+```{r, echo=FALSE}
+#f
+#determine optimal tree size
+set.seed(3)
+cv_tree1 = cv.tree(tree1, K=8)
+cv_tree1
+min(cv_tree1$dev)
+cat('the optimal tree size:', 7)
+```
+首先，我挑選K-fold，k=8來做CV，因為K=5時不足以選取出最好的值。
+
+接著可以發現，在tree size = 7時，模型有最低的deviance。
+
+因此判斷the optimal tree size = 7
+
+**(g)**
+```{r, echo=FALSE, fig.height = 10, fig.width = 10, fig.align = "center"}
+#g
+#plot
+plot(cv_tree1$size ,cv_tree1$dev ,type="b", xlab = "Tree Size", ylab = "Deviance")
+# choose best size = 7
+```
+此外這個圖也映證了上一題的結果，在size = 7時，模型有最小的deviance，故判斷best size = 7。
+
+**(h)**
+
+同上結果，size = 7時，有最小的cross-validated classi???cation error rate。
+
+**(i)**
+```{r, echo=FALSE, fig.height = 10, fig.width = 10, fig.align = "center"}
+#i
+#prune the tree
+prune_tree1 <- prune.tree(tree1, best = 7)
+#plot
+plot(prune_tree1)
+text(prune_tree1, pretty=0)
+```
+接著，我運用剛剛的結果，size = 7來修樹。
+
+可以發現，建立這棵樹只用到了兩的變數，分別是LoyalCH、PriceDiff。
+
+另外修樹後，LoyalCH仍然為一個重要的變數，當LoyalCH < 0.0356415時，分類為MM；當LoyalCH > 0.764572時，分類為CH。而介於中間的值則再由PriceDiff、LoyalCH做分類。
+
+**(j)**
+```{r, echo=FALSE}
+#j
+summary(prune_tree1)
+#train error rate = 0.1812
+#same as the original one
+```
+可以由上表發現，train error rate仍然為0.1812。
+
+**(k)**
+```{r, echo=FALSE}
+#k
+#predict
+pred2 <- predict(prune_tree1, newdata = test, type = 'class')
+#test error rates
+#pruned
+cat('test error rate from pruned tree:', 1 - mean(test$Purchase == pred2))
+#unpruned
+cat('test error rate from unpruned tree:', 1 - mean(test$Purchase == pred1))
+#they have the same test error
+```
+另外可以發現，修剪前後的test error rate也沒有改變。
+
+故可以判斷做此tree size的修剪，並沒有讓這個模型變得更好，應該可以繼續試試看調整其他的參數。
+
+**10.**
+
+**(a)**
+```{r, echo=FALSE}
+#10
+#boosting
+#a
+#drop the NA
+library(ISLR)
+attach(Hitters)
+cat('number of NAs(before):', sum(is.na(Hitters$Salary)))
+#59 NAs
+na <- which(is.na(Hitters$Salary))
+Hitters <- Hitters[-na, ]
+cat('number of NAs(after):', sum(is.na(Hitters$Salary)))
+#log transform
+Hitters$Salary <- log(Hitters$Salary)
+```
+首先，我先將資料Salary的NA值丟棄，並且對Salary做log-transform。
+
+**(b)**
+```{r, echo=FALSE}
+#b
+train <- Hitters[1:200, ]
+test <- Hitters[201:nrow(Hitters), ]
+```
+接著我將資料切成train、test set，分別為前200筆資料以及後63筆資料。
+
+**(c)**
+```{r, echo=FALSE, fig.height = 10, fig.width = 10, fig.align = "center"}
+#c
+library(gbm)
+set.seed(3)
+k <- seq(-5, 0, by = 0.1)
+lambdas <- 10^k
+m <- length(lambdas)
+train_errors = rep(NA, m)
+test_errors = rep(NA, m)
+#distribution -> gaussian(conti)
+#if classification(for two) -> bernoulli
+#if classification(more than two) -> multinomial
+for (i in 1:m) {
+  boosting <- gbm(Salary ~ ., data = train, distribution = "gaussian", 
+                      n.trees = 1000, shrinkage = lambdas[i])
+  train.pred <- predict(boosting, train, n.trees = 1000)
+  test.pred <- predict(boosting, test, n.trees = 1000)
+  train_errors[i] <- mean((train$Salary - train.pred)^2)
+  test_errors[i] <- mean((test$Salary - test.pred)^2)
+}
+#train MSE vs diff lambdas
+plot(lambdas, train_errors, type = "b", xlab = "Shrinkage", ylab = "Train MSE", 
+     col = "blue", pch = 20)
+
+```
+接著我運用boosting建立1000棵樹，並依據10^-5 ~ 1的lambda值去看train MSE的變化。
+
+可以發現的是，lambda(shrinkage value)愈大，train MSE愈小。
+
+這是可想而知的情形，接下來我會依據最小的test MSE來選取最佳的lambda。
+
+**(d)**
+```{r, echo=FALSE, fig.height = 10, fig.width = 10, fig.align = "center"}
+#d
+#test MSE vs diff lambdas
+plot(lambdas, test_errors, type = "b", xlab = "Shrinkage", ylab = "Test MSE", 
+     col = "blue", pch = 20)
+```
+接下來可以看到上圖為test MSE與Shrinkage的作圖。
+
+```{r, echo=FALSE}
+cat('best shrinkage value:', lambdas[which.min(test_errors)])
+```
+可以發現最佳的lambda值為0.1，也就是10^-1。
+
+**(f)**
+```{r, echo=FALSE, fig.height = 10, fig.width = 10, fig.align = "center"}
+#f
+boosting <- gbm(Salary ~ ., data = train, distribution = "gaussian", 
+                n.trees = 1000, shrinkage = lambdas[which.min(test_errors)])
+#variable importance
+#CBars -> number of bars to draw
+summary(boosting, cBars = 10)
+```
+接著，我運用剛才找出的最佳lambda值配適出boosting模型。
+
+並運用summary()函數找出前10重要的predictors:CAtBat、CRBI、CRuns、PutOuts、Walks、Hits、Years、CWalks、Assists、CHmRun。
+
+同時，我也畫出前10重要的predictors做為參考。
+
+**(g)**
+```{r, echo=FALSE}
+#g
+#bagging
+set.seed(3)
+#mtry = 10 -> randomforest to bagging
+bagging <- randomForest(Salary~., data = train, mtry = ncol(train) - 1)
+bagging
+#predict
+pred <- predict(bagging, newdata = test)
+cat('bagging test error:', mean((pred - test$Salary)^2)) # 0.2316231
+#boosting test error
+cat('boosting test error:', min(test_errors)) # 0.2566218
+```
+可以看到bagging的test error為0.2316231，略優於boosting的test error:0.2566218。
+
+
+
+
+
+
+
+
+
+
+
